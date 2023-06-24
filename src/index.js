@@ -1,13 +1,14 @@
 import fetchAPI from './fetch-api';
 import Notiflix from 'notiflix';
 import SimpleLightbox from 'simplelightbox';
-import axios from 'axios';
+import 'simplelightbox/dist/simple-lightbox.min.css';
 
 const searchFormEl = document.querySelector('#search-form');
 const gallery = document.querySelector('.gallery');
 const loadMoreBtnEl = document.querySelector('.load-more');
 loadMoreBtnEl.style.display = 'none';
 const pixabayFecthApi = new fetchAPI();
+let lightbox;
 
 const handleSearchFromSubmit = async event => {
   event.preventDefault();
@@ -17,17 +18,22 @@ const handleSearchFromSubmit = async event => {
 
     await pixabayFecthApi.fetchPhotos().then(data => {
       console.log(data);
+
       gallery.innerHTML = createGallery(data.hits);
+
       if (data.totalHits === 0) {
         showError();
         return;
       }
+
       loadMoreBtnEl.style.display = 'block';
+      pixabayFecthApi.page = 1;
       Notiflix.Notify.success(`Hooray! We found ${data.totalHits} images.`);
+      initializeLightbox();
     });
     event.target.reset();
   } catch (error) {
-    Notiflix.Notify.failure(error);
+    Notiflix.Notify.failure(error.message);
   }
 };
 
@@ -36,25 +42,27 @@ const createGallery = data => {
     .map(({ webformatURL, tags, likes, views, comments, downloads }) => {
       return `
         <div class='photo-card'>
-            <img src='${webformatURL}' alt='${tags}' loading='lazy' />
-                <div class='info'>
-                    <p class='info-item'>
-                    Likes:
-                        <b>${likes}</b>
-                    </p>
-                    <p class='info-item'>
-                    Views:
-                        <b>${views}</b>
-                    </p>
-                    <p class='info-item'>
-                    Comments:
-                        <b>${comments}</b>
-                    </p>
-                    <p class='info-item'>
-                    Downloads:
-                        <b>${downloads}</b>
-                    </p>
-                </div>
+            <a href='${webformatURL}' data-lightbox='gallery'>
+              <img src='${webformatURL}' alt='${tags}' loading='lazy' />
+            </a>
+            <div class='info'>
+                <p class='info-item'>
+                  Likes:
+                  <b>${likes}</b>
+                </p>
+                <p class='info-item'>
+                  Views:
+                  <b>${views}</b>
+                </p>
+                <p class='info-item'>
+                  Comments:
+                  <b>${comments}</b>
+                </p>
+                <p class='info-item'>
+                  Downloads:
+                  <b>${downloads}</b>
+                </p>
+            </div>
         </div>`;
     })
     .join('');
@@ -67,9 +75,10 @@ const showError = () => {
     'Sorry, there are no images matching your search query. Please try again.'
   );
 };
+
 const LoadMore = async () => {
   pixabayFecthApi.page += 1;
-
+  loadMoreBtnEl.style.display = 'none';
   try {
     await pixabayFecthApi.fetchPhotos().then(data => {
       console.log(data);
@@ -78,10 +87,40 @@ const LoadMore = async () => {
         showError();
         return;
       }
+      dataCheckForLoad(data);
+      smoothScroll();
+      initializeLightbox();
     });
   } catch (error) {
     Notiflix.Notify.failure(error);
   }
 };
+
 loadMoreBtnEl.addEventListener('click', LoadMore);
-//якщо фото закінчуюються то треба поставити на кнопку loadmore статус display none
+
+const smoothScroll = () => {
+  const { height: cardHeight } = document
+    .querySelector('.gallery')
+    .firstElementChild.getBoundingClientRect();
+
+  window.scrollBy({
+    top: cardHeight * 2,
+    behavior: 'smooth',
+  });
+};
+
+const dataCheckForLoad = data => {
+  if (data.hits.length >= pixabayFecthApi.maxPerPage) {
+    loadMoreBtnEl.style.display = 'block';
+  } else {
+    loadMoreBtnEl.style.display = 'none';
+  }
+};
+
+const initializeLightbox = () => {
+  if (lightbox) {
+    lightbox.refresh();
+  } else {
+    lightbox = new SimpleLightbox('.gallery a');
+  }
+};
