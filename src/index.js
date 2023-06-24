@@ -6,13 +6,15 @@ import 'simplelightbox/dist/simple-lightbox.min.css';
 const searchFormEl = document.querySelector('#search-form');
 const gallery = document.querySelector('.gallery');
 const loadMoreBtnEl = document.querySelector('.load-more');
+const loader = document.querySelector('.loader');
+
 loadMoreBtnEl.style.display = 'none';
 const pixabayFecthApi = new fetchAPI();
 let lightbox;
 
 const handleSearchFromSubmit = async event => {
   event.preventDefault();
-
+  showLoader();
   try {
     pixabayFecthApi.querry = event.target.firstElementChild.value;
 
@@ -25,7 +27,7 @@ const handleSearchFromSubmit = async event => {
         showError();
         return;
       }
-
+      hideLoader();
       loadMoreBtnEl.style.display = 'block';
       pixabayFecthApi.page = 1;
       Notiflix.Notify.success(`Hooray! We found ${data.totalHits} images.`);
@@ -79,6 +81,7 @@ const showError = () => {
 const LoadMore = async () => {
   pixabayFecthApi.page += 1;
   loadMoreBtnEl.style.display = 'none';
+  showLoader();
   try {
     await pixabayFecthApi.fetchPhotos().then(data => {
       console.log(data);
@@ -88,6 +91,7 @@ const LoadMore = async () => {
         return;
       }
       dataCheckForLoad(data);
+      hideLoader();
       smoothScroll();
       initializeLightbox();
     });
@@ -110,7 +114,7 @@ const smoothScroll = () => {
 };
 
 const dataCheckForLoad = data => {
-  if (data.hits.length >= pixabayFecthApi.maxPerPage) {
+  if (data.hits.length >= pixabayFecthApi.perPage) {
     loadMoreBtnEl.style.display = 'block';
   } else {
     loadMoreBtnEl.style.display = 'none';
@@ -123,4 +127,12 @@ const initializeLightbox = () => {
   } else {
     lightbox = new SimpleLightbox('.gallery a');
   }
+};
+const showLoader = () => {
+  loader.style.display = 'block';
+  gallery.style.display = 'none';
+};
+const hideLoader = () => {
+  loader.style.display = 'none';
+  gallery.style.display = 'flex';
 };
