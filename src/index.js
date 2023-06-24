@@ -28,10 +28,10 @@ const handleSearchFromSubmit = async event => {
         return;
       }
       hideLoader();
-      loadMoreBtnEl.style.display = 'block';
       pixabayFecthApi.page = 1;
       Notiflix.Notify.success(`Hooray! We found ${data.totalHits} images.`);
       initializeLightbox();
+      showLoadMoreBtn(data);
     });
     event.target.reset();
   } catch (error) {
@@ -90,10 +90,10 @@ const LoadMore = async () => {
         showError();
         return;
       }
-      dataCheckForLoad(data);
       hideLoader();
-      smoothScroll();
       initializeLightbox();
+      showLoadMoreBtn(data);
+      smoothScroll();
     });
   } catch (error) {
     Notiflix.Notify.failure(error);
@@ -110,15 +110,23 @@ const smoothScroll = () => {
   window.scrollBy({
     top: cardHeight * 2,
     behavior: 'smooth',
+    block: 'end',
   });
 };
 
-const dataCheckForLoad = data => {
+const showLoadMoreBtn = data => {
   if (data.hits.length >= pixabayFecthApi.perPage) {
     loadMoreBtnEl.style.display = 'block';
   } else {
     loadMoreBtnEl.style.display = 'none';
+    showEndMessage();
   }
+};
+
+const showEndMessage = () => {
+  Notiflix.Notify.info(
+    "We're sorry, but you've reached the end of search results."
+  );
 };
 
 const initializeLightbox = () => {
@@ -128,10 +136,12 @@ const initializeLightbox = () => {
     lightbox = new SimpleLightbox('.gallery a');
   }
 };
+
 const showLoader = () => {
   loader.style.display = 'block';
   gallery.style.display = 'none';
 };
+
 const hideLoader = () => {
   loader.style.display = 'none';
   gallery.style.display = 'flex';
